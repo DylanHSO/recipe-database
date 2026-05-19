@@ -164,8 +164,7 @@ class RecipeApp {
         <input type="file" id="photoFile" accept="image/*" style="display:none">
       </div>
       <div id="photoPreview"></div>
-      <button class="btn btn-primary mt-12" id="importPhotoBtn" style="display:none">Verwerk foto met AI</button>
-      ${!this.config.netlifyUrl ? `<p style="color:var(--text-muted);font-size:0.8125rem;margin-top:8px;text-align:center">Vereist een Netlify URL in instellingen.</p>` : ''}`;
+      <button class="btn btn-primary mt-12" id="importPhotoBtn" style="display:none">Verwerk foto met AI</button>`;
   }
 
   _tplTekstImport() {
@@ -174,8 +173,7 @@ class RecipeApp {
         <label>Plak of beschrijf een recept</label>
         <textarea id="tekstInput" placeholder="Plak hier een recept, of beschrijf wat je wilt maken..." style="min-height:180px"></textarea>
       </div>
-      <button class="btn btn-primary" id="importTekstBtn">Verwerk tekst met AI</button>
-      ${!this.config.netlifyUrl ? `<p style="color:var(--text-muted);font-size:0.8125rem;margin-top:8px;text-align:center">Vereist een Netlify URL in instellingen.</p>` : ''}`;
+      <button class="btn btn-primary" id="importTekstBtn">Verwerk tekst met AI</button>`;
   }
 
   _tplRecipeForm(d = {}) {
@@ -289,7 +287,7 @@ class RecipeApp {
       el.innerHTML = `<div class="empty-state"><p>Geen recepten gevonden voor <em>"${this._esc(query)}"</em>.</p></div>`;
       return;
     }
-    const hasAI = !!this.config.netlifyUrl;
+    const hasAI = true;
     el.innerHTML = `
       ${hasAI ? `<button class="btn btn-ghost mb-16" id="aiBtn">AI helpt me kiezen (${recipes.length} opties)</button>` : ''}
       <div class="recipe-grid" id="searchGrid">${recipes.map(r => this._tplCard(r)).join('')}</div>`;
@@ -450,7 +448,7 @@ class RecipeApp {
     });
     importBtn?.addEventListener('click', async () => {
       const file = importBtn._file;
-      if (!file || !this.config.netlifyUrl) return;
+      if (!file) return;
       this._setBtnLoading('importPhotoBtn', true, 'AI verwerkt foto...');
       try {
         const data = await this._importPhoto(file);
@@ -467,7 +465,7 @@ class RecipeApp {
   _bindTekstImport() {
     document.getElementById('importTekstBtn')?.addEventListener('click', async () => {
       const text = document.getElementById('tekstInput').value.trim();
-      if (!text || !this.config.netlifyUrl) return;
+      if (!text) return;
       this._setBtnLoading('importTekstBtn', true, 'AI verwerkt tekst...');
       try {
         const data = await this._importText(text);
