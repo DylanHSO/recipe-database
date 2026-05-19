@@ -83,6 +83,7 @@ class RecipeApp {
 
   _render() {
     const app = document.getElementById('app');
+    document.getElementById('cookingBar')?.remove();
     if (!this.db && this.view !== 'settings') {
       app.innerHTML = this._tplSetup();
       app.querySelector('.btn-primary')?.addEventListener('click', () => this._go('settings'));
@@ -93,6 +94,7 @@ class RecipeApp {
       case 'recipes':  this._loadRecipesView();            break;
       case 'add':      app.innerHTML = this._tplAdd();     this._bindAdd();     break;
       case 'detail':   this._loadDetailView();             break;
+      case 'cooking':  this._loadCookingView();            break;
       case 'settings': app.innerHTML = this._tplSettings(); this._bindSettings(); break;
       default:         app.innerHTML = this._tplHome();    this._bindHome();
     }
@@ -378,12 +380,146 @@ class RecipeApp {
       ${data.ingredients ? `<div class="detail-section"><div class="detail-section-label">Ingrediënten</div><p>${this._esc(data.ingredients)}</p></div>` : ''}
       ${data.instructions ? `<div class="detail-section"><div class="detail-section-label">Bereiding</div><p>${this._esc(data.instructions)}</p></div>` : ''}
       ${data.notes ? `<div class="detail-section"><div class="detail-section-label">Notities</div><p style="color:var(--text-muted)">${this._esc(data.notes)}</p></div>` : ''}
-      <div style="margin-top:32px;margin-bottom:8px">
+      <div style="margin-top:32px">
+        <button class="btn btn-primary" id="cookBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+          Start koken
+        </button>
+      </div>
+      <div style="margin-top:8px;margin-bottom:8px">
         <button class="btn btn-danger" id="deleteBtn">Recept verwijderen</button>
       </div>
       <div style="height:16px"></div>`;
     document.getElementById('backBtn').addEventListener('click', () => history.back());
+    document.getElementById('cookBtn').addEventListener('click', () => this._go('cooking', { id: data.id }));
     document.getElementById('deleteBtn').addEventListener('click', () => this._deleteRecipe(data.id, data.title));
+  }
+
+  // ── Cooking mode ───────────────────────────────────────────────────────────
+
+  async _loadCookingView() {
+    const app = document.getElementById('app');
+    app.innerHTML = `<div class="loading-center" style="padding-top:30vh"><div class="spinner"></div></div>`;
+    const { data, error } = await this.db.from('recipes').select('*').eq('id', this.params.id).single();
+    if (error || !data) { app.innerHTML = `<div class="empty-state"><p>Recept niet gevonden.</p></div>`; return; }
+
+    this._cookingRecipe = data;
+    this._cookingMessages = [];
+
+    const ingredients = (data.ingredients || '').split('\n').filter(l => l.trim());
+    const steps = (data.instructions || '').split('\n').filter(l => l.trim())
+      .map(l => l.replace(/^\d+[\.\)]\s*/, ''));
+
+    app.innerHTML = `
+      <button class="back-btn" id="cookBackBtn" style="margin-top:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Terug
+      </button>
+      <h1 class="detail-title">${this._esc(data.title)}</h1>
+      ${data.prep_time || data.servings ? `<div class="detail-meta" style="margin-bottom:20px">
+        ${data.prep_time ? `<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${data.prep_time} min</span>` : ''}
+        ${data.servings ? `<span>${data.servings} personen</span>` : ''}
+      </div>` : ''}
+      ${ingredients.length ? `
+      <div class="cooking-section">
+        <div class="detail-section-label">Ingrediënten</div>
+        <div class="cooking-checklist">
+          ${ingredients.map((line, i) => `
+            <label class="check-item">
+              <input type="checkbox" id="ing_${i}">
+              <span class="check-text">${this._esc(line)}</span>
+            </label>`).join('')}
+        </div>
+      </div>` : ''}
+      ${steps.length ? `
+      <div class="cooking-section">
+        <div class="detail-section-label">Bereiding</div>
+        <div class="cooking-steps" id="cookingSteps">
+          ${steps.map((line, i) => `
+            <div class="cooking-step" data-step="${i}">
+              <div class="step-num">${i + 1}</div>
+              <div class="step-text">${this._esc(line)}</div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+      <div class="cooking-section">
+        <div class="detail-section-label">Vraag Claude</div>
+        <div class="cooking-chat" id="cookingChat">
+          <div class="chat-msg chat-assistant">Ik help je met <strong>${this._esc(data.title)}</strong>! Stel gerust vragen over ingrediënten, bereidingstijden of vervangingen.</div>
+        </div>
+      </div>
+      <div style="height:80px"></div>`;
+
+    const bar = document.createElement('div');
+    bar.id = 'cookingBar';
+    bar.className = 'cooking-input-bar';
+    bar.innerHTML = `
+      <input type="text" class="cooking-input" id="cookingInput"
+             placeholder="Stel een vraag..." autocomplete="off" autocorrect="off">
+      <button class="cooking-send-btn" id="cookingSend" aria-label="Verstuur">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>`;
+    document.body.appendChild(bar);
+
+    document.getElementById('cookBackBtn').addEventListener('click', () => history.back());
+    document.getElementById('cookingSteps')?.addEventListener('click', e => {
+      const step = e.target.closest('.cooking-step');
+      if (step) step.classList.toggle('done');
+    });
+
+    const sendMsg = () => {
+      const input = document.getElementById('cookingInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      this._sendCookingMessage(text);
+    };
+    document.getElementById('cookingInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMsg(); });
+    document.getElementById('cookingSend').addEventListener('click', sendMsg);
+  }
+
+  async _sendCookingMessage(text) {
+    const data = this._cookingRecipe;
+    const chat = document.getElementById('cookingChat');
+    if (!chat) return;
+
+    chat.insertAdjacentHTML('beforeend', `<div class="chat-msg chat-user">${this._esc(text)}</div>`);
+    chat.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const thinkingId = `t${Date.now()}`;
+    chat.insertAdjacentHTML('beforeend', `
+      <div class="chat-msg chat-assistant chat-thinking" id="${thinkingId}">
+        <div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></div>
+      </div>`);
+    chat.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const system = `Je bent een kookhulp. Je helpt de gebruiker met het bereiden van het volgende recept:
+
+**${data.title}**${data.cuisine ? ` (${data.cuisine})` : ''}${data.prep_time ? ` | ${data.prep_time} minuten` : ''}${data.servings ? ` | ${data.servings} personen` : ''}
+
+INGREDIËNTEN:
+${data.ingredients || '(niet opgegeven)'}
+
+BEREIDING:
+${data.instructions || '(niet opgegeven)'}${data.notes ? `\nNOTITIES: ${data.notes}` : ''}
+
+Beantwoord vragen over dit recept beknopt en praktisch in het Nederlands. Geef concrete tips.`;
+
+    this._cookingMessages.push({ role: 'user', content: text });
+    try {
+      const res = await this._callClaude({ system, messages: this._cookingMessages });
+      const reply = res.content[0].text;
+      this._cookingMessages.push({ role: 'assistant', content: reply });
+      document.getElementById(thinkingId)?.remove();
+      const safeReply = this._esc(reply).replace(/\n/g, '<br>');
+      chat.insertAdjacentHTML('beforeend', `<div class="chat-msg chat-assistant">${safeReply}</div>`);
+    } catch {
+      document.getElementById(thinkingId)?.remove();
+      chat.insertAdjacentHTML('beforeend', `<div class="chat-msg chat-assistant">Sorry, er is iets misgegaan. Probeer het opnieuw.</div>`);
+    }
+    chat.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   async _deleteRecipe(id, title) {
