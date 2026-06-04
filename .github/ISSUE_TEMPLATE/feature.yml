@@ -1,0 +1,33 @@
+name: Feature aanvraag
+description: Voeg een nieuwe functie toe aan de receptendatabase
+labels: ["feature", "backlog"]
+body:
+  - type: textarea
+    id: beschrijving
+    attributes:
+      label: Beschrijving
+      description: Wat moet de feature doen? Beschrijf het vanuit het perspectief van de gebruiker.
+      placeholder: "Als gebruiker wil ik... zodat ik..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptatiecriteria
+    attributes:
+      label: Acceptatiecriteria
+      description: Wanneer is de feature klaar? Gebruik een checklist.
+      placeholder: |
+        - [ ] Gebruiker kan ...
+        - [ ] Bij fout wordt een melding getoond
+        - [ ] Werkt op mobiel
+    validations:
+      required: true
+  - type: dropdown
+    id: prioriteit
+    attributes:
+      label: Prioriteit
+      options:
+        - Hoog
+        - Normaal
+        - Laag
+    validations:
+      required: true
