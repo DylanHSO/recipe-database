@@ -37,31 +37,44 @@ netlify/
     claude.js       # Serverless proxy (CommonJS, niet aanpassen)
 ```
 
-## Workflow voor nieuwe features
+## Backlog-item oppakken
 
-Wanneer je een feature implementeert, voer je **altijd** deze stappen uit:
+Wanneer de gebruiker vraagt om een backlog-item op te pakken, doorloop je **altijd** deze volledige cyclus:
 
-### 1. Feature branch aanmaken
+### Stap 1 · Analyseer het backlog-item
+Lees `backlog.md` en het bijbehorende GitHub Issue. Bepaal:
+- Welke bestanden moeten worden aangemaakt of gewijzigd
+- Of er nieuwe Supabase-kolommen nodig zijn (vermeld dit expliciet)
+- Of er nieuwe types in `src/lib/types.ts` nodig zijn
+
+### Stap 2 · Feature branch aanmaken
 ```bash
 git checkout main
 git pull
 git checkout -b feature/<naam-van-feature>
 ```
 
-Gebruik deze naamgevingsconventies:
+Naamgevingsconventies:
 - `feature/<naam>` – nieuwe functionaliteit
 - `fix/<naam>` – bugfixes
 - `refactor/<naam>` – herstructurering zonder functiewijziging
 - `chore/<naam>` – onderhoud, afhankelijkheden, configuratie
 
-### 2. Implementeer de code
+### Stap 3 · Implementeer de code
 - Wijzig of maak alleen de bestanden die nodig zijn
 - Gebruik TypeScript strict mode — geen `any` tenzij onvermijdelijk
 - Gebruik bestaande CSS-klassen uit `src/index.css` en Tailwind utilities
 - Alle tekst in het Nederlands
 - Geen `dangerouslySetInnerHTML` gebruiken
+- Controleer altijd of `db` niet `null` is voor Supabase-aanroepen
 
-### 3. Commit en push
+### Stap 4 · Valideer de build
+```bash
+npm run build
+```
+Zorg dat de build slaagt zonder TypeScript-errors voor je commit.
+
+### Stap 5 · Commit en push
 ```bash
 git add -A
 git commit -m "feat(<scope>): <beschrijving in het Nederlands>"
@@ -74,7 +87,7 @@ Commit-berichtenconventie (Conventional Commits):
 - `refactor(context): vereenvoudig config-opslag`
 - `chore(deps): update supabase-js naar v2.50`
 
-### 4. Pull Request aanmaken
+### Stap 6 · Pull Request aanmaken
 ```bash
 gh pr create \
   --title "feat(<scope>): <beschrijving>" \
@@ -82,7 +95,23 @@ gh pr create \
   --base main
 ```
 
-## Conventions
+### Stap 7 · Instructies voor de gebruiker
+Sluit altijd af met een **Validatie-instructie** in dit formaat:
+
+---
+**Hoe je dit kunt testen:**
+1. Zorg dat je op de feature branch zit: `git checkout feature/<naam>`
+2. Start de dev-server: `npm run dev`
+3. Open de app in de browser op `http://localhost:5173`
+4. [Concrete stappen specifiek voor de feature, bijv.: "Ga naar een recept → klik op het hartje → ververs de pagina → het hartje is nog steeds gevuld"]
+5. [Eventuele Supabase-stappen als er schema-wijzigingen zijn]
+---
+
+Meld ook altijd als er **handmatige stappen** nodig zijn (bijv. een SQL-migratie uitvoeren in Supabase).
+
+---
+
+## Coderingconventies
 
 - **Context**: Gebruik `useApp()` voor `config`, `db`, `showToast`
 - **Routing**: `useNavigate()` en `useParams()` uit react-router-dom
