@@ -14,6 +14,7 @@ export interface Recipe {
   instructions: string
   notes?: string
   created_at: string
+  is_favorite?: boolean
 }
 
 export interface AppConfig {
