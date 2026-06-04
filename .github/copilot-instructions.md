@@ -111,6 +111,23 @@ Meld ook altijd als er **handmatige stappen** nodig zijn (bijv. een SQL-migratie
 
 ---
 
+## Git-hygiëne (verplicht)
+
+`node_modules/` en `dist/` mogen **nooit** in git staan — ze staan in `.gitignore`, maar als ze ooit per ongeluk toch getrackt zijn geraakt moet je ze verwijderen:
+
+```bash
+git ls-files node_modules | Measure-Object   # > 0 = probleem
+git rm -rf --cached node_modules
+git rm -rf --cached dist
+git add .gitignore
+git commit -m "chore: verwijder node_modules/dist uit git tracking"
+git push
+```
+
+Controleer dit **altijd** als een Netlify-build slaagt maar `npm install` slechts 0–5 packages installeert in plaats van de volledige `package.json`.
+
+---
+
 ## Coderingconventies
 
 - **Context**: Gebruik `useApp()` voor `config`, `db`, `showToast`
