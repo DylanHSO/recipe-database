@@ -1,5 +1,5 @@
 [build]
-  command = "npm install --include=dev && ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build"
+  command = "npm install && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 
