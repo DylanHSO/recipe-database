@@ -76,6 +76,25 @@ h2 { font-size: 1.125rem; font-weight: 600; }
 
 .recipe-card-thumb-placeholder svg { opacity: 0.35; }
 
+.recipe-card-favorite {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(255,255,255,0.85);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+.recipe-card-favorite:active { transform: scale(0.85); }
+
 .recipe-card-body { padding: 10px 10px 12px; }
 
 .recipe-card-title {

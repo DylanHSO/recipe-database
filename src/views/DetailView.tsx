@@ -12,6 +12,7 @@ export default function DetailView() {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [togglingFav, setTogglingFav] = useState(false)
 
   useEffect(() => {
     if (!db || !id) { setLoading(false); return }
@@ -39,6 +40,20 @@ export default function DetailView() {
     }
   }
 
+  async function handleToggleFavorite() {
+    if (!db || !recipe) return
+    setTogglingFav(true)
+    const newValue = !recipe.is_favorite
+    const { error } = await db.from('recipes').update({ is_favorite: newValue }).eq('id', recipe.id)
+    if (error) {
+      showToast('Opslaan mislukt')
+    } else {
+      setRecipe({ ...recipe, is_favorite: newValue })
+      showToast(newValue ? 'Toegevoegd aan favorieten' : 'Verwijderd uit favorieten')
+    }
+    setTogglingFav(false)
+  }
+
   if (loading) return <div className="loading-center"><Spinner /></div>
   if (!recipe) return <div className="empty-state"><p>Recept niet gevonden</p></div>
 
@@ -59,7 +74,23 @@ export default function DetailView() {
         <SourceBadge type={recipe.source_type} />
       </div>
 
-      <h1 className="detail-title">{recipe.title}</h1>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+        <h1 className="detail-title" style={{ margin: 0, flex: 1 }}>{recipe.title}</h1>
+        <button
+          onClick={handleToggleFavorite}
+          disabled={togglingFav}
+          aria-label="Favoriet"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, marginTop: 4 }}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24"
+            fill={recipe.is_favorite ? '#E8651A' : 'none'}
+            stroke={recipe.is_favorite ? '#E8651A' : 'currentColor'}
+            strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
+      </div>
 
       <div className="detail-meta">
         {recipe.cuisine && <span>{recipe.cuisine}</span>}

@@ -53,6 +53,14 @@ export default function HomeView() {
     setLoading(false)
   }
 
+  async function handleToggleFavorite(id: string, isFavorite: boolean) {
+    if (!db) return
+    const { error } = await db.from('recipes').update({ is_favorite: isFavorite }).eq('id', id)
+    if (!error) {
+      setRecipes(prev => prev.map(r => r.id === id ? { ...r, is_favorite: isFavorite } : r))
+    }
+  }
+
   async function handleSuggest() {
     if (!config || !query.trim()) return
     setSuggestLoading(true)
@@ -146,7 +154,7 @@ export default function HomeView() {
         </div>
       ) : (
         <div className="recipe-grid">
-          {recipes.map(r => <RecipeCard key={r.id} recipe={r} />)}
+          {recipes.map(r => <RecipeCard key={r.id} recipe={r} onToggleFavorite={handleToggleFavorite} />)}
         </div>
       )}
     </div>
